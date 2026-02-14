@@ -1,5 +1,6 @@
 using Forssa.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 namespace Forssa.Infrastructure.Data;
 
