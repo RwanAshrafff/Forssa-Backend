@@ -10,13 +10,15 @@ namespace Forssa.API.Controllers;
 public class UsersController : ControllerBase
 {
     private readonly IUserService _userService;
+    private readonly ILogger<UsersController> _logger;
 
-    public UsersController(IUserService userService)
+    public UsersController(IUserService userService, ILogger<UsersController> logger)
     {
         _userService = userService;
+        _logger = logger;
     }
 
-    [Authorize(Roles = "instructor,student")]
+    [Authorize]
     [HttpGet("me")]
     public async Task<IActionResult> GetMe([FromQuery] string? role = null)
     {
@@ -27,6 +29,8 @@ public class UsersController : ControllerBase
 
         if (string.IsNullOrEmpty(supabaseId))
             return BadRequest("User ID (sub) not found in token.");
+
+        _logger.LogInformation("Syncing user {Email} (ID: {SupabaseId}) with role {Role}", email, supabaseId, role);
 
         // If role not passed as query param, try to read from JWT claims (Supabase user_metadata)
         if (string.IsNullOrEmpty(role))

@@ -30,7 +30,7 @@ public class UserService : BaseService<User, UserDTO>, IUserService
             {
                 SupabaseId = supabaseId,
                 Email = email,
-                Role = role ?? "User"
+                Role = role ?? "Student" // Default to Student if not specified, aligning with typical signup
             };
 
             _context.Users.Add(newUser);
@@ -38,7 +38,7 @@ public class UserService : BaseService<User, UserDTO>, IUserService
             return _mapper.Map<UserDTO>(newUser);
         }
 
-        // Existing user - only update role if explicitly provided
+        // Existing user - update role and email if they changed
         bool changed = false;
 
         if (!string.IsNullOrEmpty(role) && existingUser.Role != role)
@@ -47,8 +47,17 @@ public class UserService : BaseService<User, UserDTO>, IUserService
             changed = true;
         }
 
+        if (!string.IsNullOrEmpty(email) && existingUser.Email != email)
+        {
+            existingUser.Email = email;
+            changed = true;
+        }
+
         if (changed)
+        {
+            existingUser.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
+        }
 
         return _mapper.Map<UserDTO>(existingUser);
     }
