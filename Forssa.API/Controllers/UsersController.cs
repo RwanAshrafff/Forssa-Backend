@@ -1,8 +1,6 @@
-using Forssa.Domain.Entities;
-using Forssa.Infrastructure.Data;
+using Forssa.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace Forssa.API.Controllers;
@@ -11,42 +9,58 @@ namespace Forssa.API.Controllers;
 [Route("api/[controller]")]
 public class UsersController : ControllerBase
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IUserService _userService;
+    private readonly ILogger<UsersController> _logger;
 
-    public UsersController(ApplicationDbContext context)
+    public UsersController(IUserService userService, ILogger<UsersController> logger)
     {
-        _context = context;
+        _userService = userService;
+        _logger = logger;
     }
 
     [Authorize]
-    [HttpPost("sync-user")]
-    public async Task<IActionResult> SyncUser()
+    [HttpGet("me")]
+    public async Task<IActionResult> GetMe([FromQuery] string? role = null)
     {
-        var supabaseId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value 
+        var supabaseId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
                         ?? User.FindFirst("sub")?.Value;
-        var email = User.FindFirst(ClaimTypes.Email)?.Value 
+        var email = User.FindFirst(ClaimTypes.Email)?.Value
                     ?? User.FindFirst("email")?.Value;
 
         if (string.IsNullOrEmpty(supabaseId))
             return BadRequest("User ID (sub) not found in token.");
 
-        var existingUser = await _context.Users
-            .FirstOrDefaultAsync(x => x.SupabaseId == supabaseId);
+        _logger.LogInformation("Syncing user {Email} (ID: {SupabaseId}) with role {Role}", email, supabaseId, role);
 
-        if (existingUser == null)
+        // If role not passed as query param, try to read from JWT claims (Supabase user_metadata)
+        if (string.IsNullOrEmpty(role))
         {
-            var newUser = new User
-            {
-                SupabaseId = supabaseId,
-                Email = email ?? string.Empty,
-                Role = "User"
-            };
-
-            _context.Users.Add(newUser);
-            await _context.SaveChangesAsync();
-            return Ok(new { Message = "User created", User = newUser });
+            role = User.FindFirst("user_metadata.role")?.Value
+                ?? User.FindFirst("role")?.Value;
         }
 
-        return Ok(new { Message = "User already exists", User = existingUser });
+        var userDto = await _userService.SyncUserAsync(supabaseId, email ?? string.Empty, role);
+        return Ok(userDto);
+    }
+
+    [Authorize]  // No role restriction — called during initial role selection (user has no role yet)
+    [HttpPut("me/role")]
+    public async Task<IActionResult> UpdateRole([FromBody] UpdateRoleRequest request)
+    {
+        var supabaseId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                        ?? User.FindFirst("sub")?.Value;
+        var email = User.FindFirst(ClaimTypes.Email)?.Value
+                    ?? User.FindFirst("email")?.Value;
+
+        if (string.IsNullOrEmpty(supabaseId))
+            return BadRequest("User ID (sub) not found in token.");
+
+        if (string.IsNullOrEmpty(request.Role))
+            return BadRequest("Role is required.");
+
+        var userDto = await _userService.SyncUserAsync(supabaseId, email ?? string.Empty, request.Role);
+        return Ok(userDto);
     }
 }
+
+public record UpdateRoleRequest(string Role);

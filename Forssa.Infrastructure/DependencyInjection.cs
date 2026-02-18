@@ -28,6 +28,7 @@ public static class DependencyInjection
 
         // Register services - Add your custom services here
         services.AddScoped<ProductService>();
+        services.AddScoped<IUserService, UserService>();
         
         return services;
     }

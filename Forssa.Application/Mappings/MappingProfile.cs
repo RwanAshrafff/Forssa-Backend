@@ -10,6 +10,7 @@ public class MappingProfile : Profile
     {
         // Add your entity to DTO mappings here
         CreateMap<Product, ProductDTO>().ReverseMap();
+        CreateMap<User, UserDTO>().ReverseMap();
         
         // Add more mappings as needed
     }
