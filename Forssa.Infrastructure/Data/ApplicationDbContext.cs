@@ -13,6 +13,7 @@ public class ApplicationDbContext : DbContext
 
     // Add your DbSets here
     public DbSet<Product> Products { get; set; }
+    public DbSet<User> Users { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -30,6 +31,11 @@ public class ApplicationDbContext : DbContext
 
         // Apply configurations
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
+
+        // Add Unique Index for SupabaseId
+        modelBuilder.Entity<User>()
+            .HasIndex(u => u.SupabaseId)
+            .IsUnique();
     }
 
     private static LambdaExpression GetSoftDeleteFilter(Type entityType)
