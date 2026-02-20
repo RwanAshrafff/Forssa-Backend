@@ -47,6 +47,15 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+// --- NEW: Run Database Trigger Setup ---
+using (var scope = app.Services.CreateScope())
+{
+    var triggerSetup = scope.ServiceProvider.GetRequiredService<Forssa.Infrastructure.Data.DatabaseTriggerSetup>();
+    await triggerSetup.SetupUserSyncTriggerAsync();
+}
+// ---------------------------------------
+
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -72,27 +81,41 @@ app.Run();
 /// </summary>
 public class SupabaseClaimsTransformation : IClaimsTransformation
 {
-    public Task<ClaimsPrincipal> TransformAsync(ClaimsPrincipal principal)
+    public async Task<ClaimsPrincipal> TransformAsync(ClaimsPrincipal principal)
     {
-        // Supabase embeds role as a nested JSON string: user_metadata → { "role": "student" }
-        // The JWT middleware flattens it to the claim key "user_metadata" with a JSON value,
-        // OR sometimes as individual keys like "user_metadata.role".
-        // We handle both patterns.
         var identity = (ClaimsIdentity)principal.Identity!;
 
-        // Already has a role claim? Nothing to do.
         if (identity.HasClaim(c => c.Type == ClaimTypes.Role))
-            return Task.FromResult(principal);
+            return principal;
 
         // Pattern 1: flattened key "user_metadata.role"
         var role = identity.FindFirst("user_metadata.role")?.Value;
 
-        // Pattern 2: raw "role" claim (Supabase sometimes puts it here too)
+        // Pattern 2: raw "role" claim
         role ??= identity.FindFirst("role")?.Value;
+
+        // Pattern 3: user_metadata as JSON string
+        if (string.IsNullOrEmpty(role))
+        {
+            var userMetadataJson = identity.FindFirst("user_metadata")?.Value;
+            if (!string.IsNullOrEmpty(userMetadataJson))
+            {
+                try
+                {
+                    using var doc = System.Text.Json.JsonDocument.Parse(userMetadataJson);
+                    if (doc.RootElement.TryGetProperty("role", out var roleProp))
+                    {
+                        role = roleProp.GetString();
+                    }
+                }
+                catch { /* Ignore parsing errors */ }
+            }
+        }
 
         if (!string.IsNullOrEmpty(role))
             identity.AddClaim(new Claim(ClaimTypes.Role, role));
 
-        return Task.FromResult(principal);
+        return principal;
     }
+
 }

@@ -20,6 +20,8 @@ public class UserService : BaseService<User, UserDTO>, IUserService
     public async Task<UserDTO> SyncUserAsync(string supabaseId, string email, string? role = null)
     {
         // Use direct DbContext to avoid any caching/tracking issues
+        // We look for existing user, but we use AsNoTracking for the initial check 
+        // because we might be in a race condition with the DB trigger.
         var existingUser = await _context.Users
             .FirstOrDefaultAsync(u => u.SupabaseId == supabaseId);
 
@@ -30,15 +32,28 @@ public class UserService : BaseService<User, UserDTO>, IUserService
             {
                 SupabaseId = supabaseId,
                 Email = email,
-                Role = role ?? "Student" // Default to Student if not specified, aligning with typical signup
+                Role = role ?? "Student"
             };
 
-            _context.Users.Add(newUser);
-            await _context.SaveChangesAsync();
-            return _mapper.Map<UserDTO>(newUser);
+            try 
+            {
+                _context.Users.Add(newUser);
+                await _context.SaveChangesAsync();
+                return _mapper.Map<UserDTO>(newUser);
+            }
+            catch (DbUpdateException)
+            {
+                // Likely a race condition where the DB trigger already inserted the user
+                // Fetch again
+                existingUser = await _context.Users
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(u => u.SupabaseId == supabaseId);
+                
+                if (existingUser == null) throw; // Re-throw if truly failed
+            }
         }
 
-        // Existing user - update role and email if they changed
+        // Existing user (either found via FirstOrDefault or after race condition)
         bool changed = false;
 
         if (!string.IsNullOrEmpty(role) && existingUser.Role != role)
@@ -56,9 +71,11 @@ public class UserService : BaseService<User, UserDTO>, IUserService
         if (changed)
         {
             existingUser.UpdatedAt = DateTime.UtcNow;
+            _context.Users.Update(existingUser);
             await _context.SaveChangesAsync();
         }
 
         return _mapper.Map<UserDTO>(existingUser);
     }
+
 }

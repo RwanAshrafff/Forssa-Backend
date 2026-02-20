@@ -27,6 +27,7 @@ public static class DependencyInjection
         services.AddScoped(typeof(IBaseRepository<>), typeof(BaseRepository<>));
 
         // Register services - Add your custom services here
+        services.AddScoped<DatabaseTriggerSetup>();
         services.AddScoped<ProductService>();
         services.AddScoped<IUserService, UserService>();
         
