@@ -30,16 +30,28 @@ public class UsersController : ControllerBase
         if (string.IsNullOrEmpty(supabaseId))
             return BadRequest("User ID (sub) not found in token.");
 
-        _logger.LogInformation("Syncing user {Email} (ID: {SupabaseId}) with role {Role}", email, supabaseId, role);
-
-        // If role not passed as query param, try to read from JWT claims (Supabase user_metadata)
+        // Metadata extracted by SupabaseClaimsTransformation
+        var fullName = User.FindFirst("full_name")?.Value;
+        var bio = User.FindFirst("bio")?.Value;
+        var avatarUrl = User.FindFirst("avatar_url")?.Value;
+        var username = User.FindFirst("username")?.Value;
+        
         if (string.IsNullOrEmpty(role))
         {
-            role = User.FindFirst("user_metadata.role")?.Value
-                ?? User.FindFirst("role")?.Value;
+            role = User.FindFirst(ClaimTypes.Role)?.Value;
         }
 
-        var userDto = await _userService.SyncUserAsync(supabaseId, email ?? string.Empty, role);
+        _logger.LogInformation("Syncing user {Email} (ID: {SupabaseId}) with full metadata", email, supabaseId);
+
+        var userDto = await _userService.SyncUserAsync(
+            supabaseId, 
+            email ?? string.Empty, 
+            role,
+            fullName,
+            bio,
+            avatarUrl,
+            username);
+            
         return Ok(userDto);
     }
 
@@ -61,6 +73,32 @@ public class UsersController : ControllerBase
         var userDto = await _userService.SyncUserAsync(supabaseId, email ?? string.Empty, request.Role);
         return Ok(userDto);
     }
+    [Authorize]
+    [HttpPut("profile")]
+    public async Task<IActionResult> UpdateProfile([FromBody] UserProfileRequest request)
+    {
+        var supabaseId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                        ?? User.FindFirst("sub")?.Value;
+        var email = User.FindFirst(ClaimTypes.Email)?.Value
+                    ?? User.FindFirst("email")?.Value;
+
+        if (string.IsNullOrEmpty(supabaseId))
+            return BadRequest("User ID (sub) not found in token.");
+
+        _logger.LogInformation("Actively updating profile for user {Email}", email);
+
+        var userDto = await _userService.SyncUserAsync(
+            supabaseId, 
+            email ?? string.Empty, 
+            null, // Don't change role here
+            request.FullName,
+            request.Bio,
+            request.AvatarUrl,
+            request.Username);
+            
+        return Ok(userDto);
+    }
 }
 
 public record UpdateRoleRequest(string Role);
+public record UserProfileRequest(string? FullName, string? Bio, string? AvatarUrl, string? Username);
