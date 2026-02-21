@@ -17,23 +17,17 @@ public class UserService : BaseService<User, UserDTO>, IUserService
         _context = context;
     }
 
-    public async Task<UserDTO> SyncUserAsync(string supabaseId, string email, string? role = null)
+    public async Task<UserDTO> SyncUserAsync(string supabaseId, string email, string? role = null, string? fullName = null, string? bio = null, string? avatarUrl = null, string? username = null)
     {
         // Use direct DbContext to avoid any caching/tracking issues
-        // We look for existing user, but we use AsNoTracking for the initial check 
-        // because we might be in a race condition with the DB trigger.
         var existingUser = await _context.Users
             .FirstOrDefaultAsync(u => u.SupabaseId == supabaseId);
 
         if (existingUser == null)
         {
-            // New user - create with role if provided
-            var newUser = new User
-            {
-                SupabaseId = supabaseId,
-                Email = email,
-                Role = role ?? "Student"
-            };
+            // New user - create with all metadata
+            var newUser = new User(supabaseId, email, role ?? "Student");
+            newUser.UpdateProfile(fullName, bio, avatarUrl, username);
 
             try 
             {
@@ -43,39 +37,42 @@ public class UserService : BaseService<User, UserDTO>, IUserService
             }
             catch (DbUpdateException)
             {
-                // Likely a race condition where the DB trigger already inserted the user
-                // Fetch again
+                // Race condition fallback
                 existingUser = await _context.Users
                     .AsNoTracking()
                     .FirstOrDefaultAsync(u => u.SupabaseId == supabaseId);
                 
-                if (existingUser == null) throw; // Re-throw if truly failed
+                if (existingUser == null) throw;
             }
         }
 
-        // Existing user (either found via FirstOrDefault or after race condition)
+        // Existing user update logic using domain methods
         bool changed = false;
 
-        if (!string.IsNullOrEmpty(role) && existingUser.Role != role)
-        {
-            existingUser.Role = role;
-            changed = true;
+        if (!string.IsNullOrEmpty(role) && existingUser.Role != role) 
+        { 
+            existingUser.UpdateRole(role); 
+            changed = true; 
+        }
+        
+        if (!string.IsNullOrEmpty(email) && existingUser.Email != email) 
+        { 
+            existingUser.UpdateEmail(email); 
+            changed = true; 
         }
 
-        if (!string.IsNullOrEmpty(email) && existingUser.Email != email)
-        {
-            existingUser.Email = email;
-            changed = true;
-        }
+        // Always attempt profile update (domain method handles internal comparison if needed, 
+        // but for simplicity we'll just track if we should save)
+        existingUser.UpdateProfile(fullName, bio, avatarUrl, username);
+        changed = true;
 
         if (changed)
         {
-            existingUser.UpdatedAt = DateTime.UtcNow;
             _context.Users.Update(existingUser);
             await _context.SaveChangesAsync();
         }
 
         return _mapper.Map<UserDTO>(existingUser);
     }
-
 }
+

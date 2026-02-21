@@ -2,6 +2,7 @@ using Forssa.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
+
 namespace Forssa.Infrastructure.Data;
 
 public class ApplicationDbContext : DbContext
@@ -14,18 +15,68 @@ public class ApplicationDbContext : DbContext
     // Add your DbSets here
     public DbSet<Product> Products { get; set; }
     public DbSet<User> Users { get; set; }
+    public DbSet<Course> Courses { get; set; }
+    public DbSet<Module> Modules { get; set; }
+    public DbSet<Lesson> Lessons { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        // Configure global query filter for soft delete
+        // Course -> Modules
+        modelBuilder.Entity<Course>(entity =>
+        {
+            entity.ToTable("courses");
+            entity.HasMany(c => c.Modules)
+                  .WithOne(m => m.Course)
+                  .HasForeignKey(m => m.Course_id)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Module -> Lessons
+        modelBuilder.Entity<Module>(entity =>
+        {
+            entity.ToTable("modules");
+            entity.HasMany(m => m.Lessons)
+                  .WithOne(l => l.Module)
+                  .HasForeignKey(l => l.Module_id)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Lesson
+        modelBuilder.Entity<Lesson>(entity =>
+        {
+            entity.ToTable("lessons");
+        });
+
+        // Product
+        modelBuilder.Entity<Product>().ToTable("Products");
+
+        // User
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.ToTable("Users");
+            entity.HasIndex(u => u.SupabaseId).IsUnique();
+        });
+
+        // Configure global defaults and query filter for soft delete
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
             if (typeof(BaseEntity).IsAssignableFrom(entityType.ClrType))
             {
-                modelBuilder.Entity(entityType.ClrType)
-                    .HasQueryFilter(GetSoftDeleteFilter(entityType.ClrType));
+                var entity = modelBuilder.Entity(entityType.ClrType);
+
+                entity.HasQueryFilter(GetSoftDeleteFilter(entityType.ClrType));
+
+                // Add defaults for Id, CreatedAt, and IsDeleted
+                entity.Property(nameof(BaseEntity.Id))
+                    .HasDefaultValueSql("gen_random_uuid()");
+
+                entity.Property(nameof(BaseEntity.CreatedAt))
+                    .HasDefaultValueSql("now()");
+
+                entity.Property(nameof(BaseEntity.IsDeleted))
+                    .HasDefaultValue(false);
             }
         }
 

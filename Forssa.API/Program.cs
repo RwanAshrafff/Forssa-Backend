@@ -47,15 +47,6 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
-// --- NEW: Run Database Trigger Setup ---
-using (var scope = app.Services.CreateScope())
-{
-    var triggerSetup = scope.ServiceProvider.GetRequiredService<Forssa.Infrastructure.Data.DatabaseTriggerSetup>();
-    await triggerSetup.SetupUserSyncTriggerAsync();
-}
-// ---------------------------------------
-
-
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -75,10 +66,6 @@ app.MapControllers();
 
 app.Run();
 
-/// <summary>
-/// Reads the role stored inside Supabase's user_metadata JWT claim and promotes it
-/// to the standard ClaimTypes.Role so ASP.NET Core role-based auth works normally.
-/// </summary>
 public class SupabaseClaimsTransformation : IClaimsTransformation
 {
     public async Task<ClaimsPrincipal> TransformAsync(ClaimsPrincipal principal)
@@ -88,32 +75,44 @@ public class SupabaseClaimsTransformation : IClaimsTransformation
         if (identity.HasClaim(c => c.Type == ClaimTypes.Role))
             return principal;
 
-        // Pattern 1: flattened key "user_metadata.role"
-        var role = identity.FindFirst("user_metadata.role")?.Value;
-
-        // Pattern 2: raw "role" claim
-        role ??= identity.FindFirst("role")?.Value;
-
-        // Pattern 3: user_metadata as JSON string
-        if (string.IsNullOrEmpty(role))
+        var userMetadataJson = identity.FindFirst("user_metadata")?.Value;
+        if (!string.IsNullOrEmpty(userMetadataJson))
         {
-            var userMetadataJson = identity.FindFirst("user_metadata")?.Value;
-            if (!string.IsNullOrEmpty(userMetadataJson))
+            try
             {
-                try
-                {
-                    using var doc = System.Text.Json.JsonDocument.Parse(userMetadataJson);
-                    if (doc.RootElement.TryGetProperty("role", out var roleProp))
-                    {
-                        role = roleProp.GetString();
-                    }
-                }
-                catch { /* Ignore parsing errors */ }
+                using var doc = System.Text.Json.JsonDocument.Parse(userMetadataJson);
+                var root = doc.RootElement;
+
+                // 1. Role
+                if (root.TryGetProperty("role", out var roleProp))
+                    identity.AddClaim(new Claim(ClaimTypes.Role, roleProp.GetString() ?? "Student"));
+
+                // 2. Full Name
+                if (root.TryGetProperty("full_name", out var nameProp))
+                    identity.AddClaim(new Claim("full_name", nameProp.GetString() ?? ""));
+
+                // 3. Bio
+                if (root.TryGetProperty("bio", out var bioProp))
+                    identity.AddClaim(new Claim("bio", bioProp.GetString() ?? ""));
+
+                // 4. Avatar URL
+                if (root.TryGetProperty("avatar_url", out var avatarProp))
+                    identity.AddClaim(new Claim("avatar_url", avatarProp.GetString() ?? ""));
+
+                // 5. Username
+                if (root.TryGetProperty("username", out var userProp))
+                    identity.AddClaim(new Claim("username", userProp.GetString() ?? ""));
             }
+            catch { /* Ignore parsing errors */ }
         }
 
-        if (!string.IsNullOrEmpty(role))
-            identity.AddClaim(new Claim(ClaimTypes.Role, role));
+        // Fallback for role if not in JSON (e.g. flattened by some middleware)
+        if (!identity.HasClaim(c => c.Type == ClaimTypes.Role))
+        {
+            var role = identity.FindFirst("user_metadata.role")?.Value ?? identity.FindFirst("role")?.Value;
+            if (!string.IsNullOrEmpty(role))
+                identity.AddClaim(new Claim(ClaimTypes.Role, role));
+        }
 
         return principal;
     }

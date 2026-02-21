@@ -6,5 +6,5 @@ namespace Forssa.Application.Interfaces;
 
 public interface IUserService : IBaseService<User, UserDTO>
 {
-    Task<UserDTO> SyncUserAsync(string supabaseId, string email, string? role = null);
+    Task<UserDTO> SyncUserAsync(string supabaseId, string email, string? role = null, string? fullName = null, string? bio = null, string? avatarUrl = null, string? username = null);
 }
