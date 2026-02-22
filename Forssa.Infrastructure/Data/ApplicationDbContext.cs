@@ -18,6 +18,9 @@ public class ApplicationDbContext : DbContext
     public DbSet<Course> Courses { get; set; }
     public DbSet<Module> Modules { get; set; }
     public DbSet<Lesson> Lessons { get; set; }
+    public DbSet<LessonProgress> LessonProgress { get; set; }
+    public DbSet<LessonNote> LessonNotes { get; set; }
+    public DbSet<Enrollment> Enrollments { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -47,6 +50,37 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<Lesson>(entity =>
         {
             entity.ToTable("lessons");
+        });
+
+        // LessonProgress
+        modelBuilder.Entity<LessonProgress>(entity =>
+        {
+            entity.ToTable("lesson_progress");
+            entity.HasIndex(lp => new { lp.UserId, lp.LessonId }).IsUnique();
+        });
+
+        // LessonNote
+        modelBuilder.Entity<LessonNote>(entity =>
+        {
+            entity.ToTable("lesson_notes");
+            entity.HasIndex(ln => new { ln.UserId, ln.LessonId }).IsUnique();
+        });
+
+        // Enrollments
+        modelBuilder.Entity<Enrollment>(entity =>
+        {
+            entity.ToTable("enrollments");
+            entity.HasIndex(e => new { e.StudentId, e.CourseId }).IsUnique();
+            
+            entity.HasOne(e => e.Student)
+                  .WithMany()
+                  .HasForeignKey(e => e.StudentId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Course)
+                  .WithMany()
+                  .HasForeignKey(e => e.CourseId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
 
         // Product

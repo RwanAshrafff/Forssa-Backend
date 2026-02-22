@@ -27,15 +27,18 @@ namespace Forssa.Infrastructure.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<string>("Category")
                         .HasColumnType("text")
                         .HasColumnName("category");
 
                     b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
 
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
@@ -50,7 +53,9 @@ namespace Forssa.Infrastructure.Migrations
                         .HasColumnName("instructor_id");
 
                     b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
+                        .HasDefaultValue(false)
                         .HasColumnName("is_deleted");
 
                     b.Property<string>("Level")
@@ -79,23 +84,78 @@ namespace Forssa.Infrastructure.Migrations
                     b.ToTable("courses", (string)null);
                 });
 
-            modelBuilder.Entity("Forssa.Domain.Entities.Lesson", b =>
+            modelBuilder.Entity("Forssa.Domain.Entities.Enrollment", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<Guid>("CourseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("course_id");
 
                     b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
 
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("deletedAt");
 
                     b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_deleted");
+
+                    b.Property<Guid>("StudentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("student_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CourseId");
+
+                    b.HasIndex("StudentId", "CourseId")
+                        .IsUnique();
+
+                    b.ToTable("enrollments", (string)null);
+                });
+
+            modelBuilder.Entity("Forssa.Domain.Entities.Lesson", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deletedAt");
+
+                    b.Property<string>("Duration")
+                        .HasColumnType("text")
+                        .HasColumnName("duration");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
                         .HasColumnName("is_deleted");
 
                     b.Property<Guid>("Module_id")
@@ -126,27 +186,133 @@ namespace Forssa.Infrastructure.Migrations
                     b.ToTable("lessons", (string)null);
                 });
 
-            modelBuilder.Entity("Forssa.Domain.Entities.Module", b =>
+            modelBuilder.Entity("Forssa.Domain.Entities.LessonNote", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
 
-                    b.Property<Guid>("Course_id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("course_id");
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("content");
 
                     b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
 
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("deletedAt");
 
                     b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_deleted");
+
+                    b.Property<Guid>("LessonId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("lesson_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "LessonId")
+                        .IsUnique();
+
+                    b.ToTable("lesson_notes", (string)null);
+                });
+
+            modelBuilder.Entity("Forssa.Domain.Entities.LessonProgress", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTime>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deletedAt");
+
+                    b.Property<bool>("IsCompleted")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_completed");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_deleted");
+
+                    b.Property<Guid>("LessonId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("lesson_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "LessonId")
+                        .IsUnique();
+
+                    b.ToTable("lesson_progress", (string)null);
+                });
+
+            modelBuilder.Entity("Forssa.Domain.Entities.Module", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<Guid>("Course_id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("course_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deletedAt");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
                         .HasColumnName("is_deleted");
 
                     b.Property<int>("Position")
@@ -174,11 +340,14 @@ namespace Forssa.Infrastructure.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
 
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
@@ -189,7 +358,9 @@ namespace Forssa.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
+                        .HasDefaultValue(false)
                         .HasColumnName("is_deleted");
 
                     b.Property<string>("Name")
@@ -216,7 +387,8 @@ namespace Forssa.Infrastructure.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<string>("AvatarUrl")
                         .HasColumnType("text");
@@ -225,8 +397,10 @@ namespace Forssa.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
 
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
@@ -240,7 +414,9 @@ namespace Forssa.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
+                        .HasDefaultValue(false)
                         .HasColumnName("is_deleted");
 
                     b.Property<string>("Role")
@@ -264,6 +440,25 @@ namespace Forssa.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Users", (string)null);
+                });
+
+            modelBuilder.Entity("Forssa.Domain.Entities.Enrollment", b =>
+                {
+                    b.HasOne("Forssa.Domain.Entities.Course", "Course")
+                        .WithMany()
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Forssa.Domain.Entities.User", "Student")
+                        .WithMany()
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Course");
+
+                    b.Navigation("Student");
                 });
 
             modelBuilder.Entity("Forssa.Domain.Entities.Lesson", b =>
