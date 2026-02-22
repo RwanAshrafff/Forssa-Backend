@@ -50,9 +50,47 @@ public class Lesson : BaseEntity
     public string? Video_url { get; set; }
     [Column("position")]
     public int Position { get; set; }
+    [Column("duration")]
+    public string? Duration { get; set; } = "0:00";
 
     // Relationships
     public Module Module { get; set; } = null!;
 }
 
+[Table("lesson_progress")]
+public class LessonProgress : BaseEntity
+{
+    [Column("user_id")]
+    public Guid UserId { get; set; }
+    [Column("lesson_id")]
+    public Guid LessonId { get; set; }
+    [Column("is_completed")]
+    public bool IsCompleted { get; set; } = true;
+    [Column("completed_at")]
+    public DateTime CompletedAt { get; set; } = DateTime.UtcNow;
+}
 
+[Table("lesson_notes")]
+public class LessonNote : BaseEntity
+{
+    [Column("user_id")]
+    public Guid UserId { get; set; }
+    [Column("lesson_id")]
+    public Guid LessonId { get; set; }
+    [Column("content")]
+    public string Content { get; set; } = string.Empty;
+}
+
+
+[Table("enrollments")]
+public class Enrollment : BaseEntity
+{
+    [Column("student_id")]
+    public Guid StudentId { get; set; }
+    [Column("course_id")]
+    public Guid CourseId { get; set; }
+
+    // Relationships
+    public User Student { get; set; } = null!;
+    public Course Course { get; set; } = null!;
+}

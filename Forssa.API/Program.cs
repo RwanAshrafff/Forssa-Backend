@@ -1,6 +1,8 @@
 using Forssa.Infrastructure;
+using Forssa.Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 
@@ -46,6 +48,22 @@ builder.Services.AddScoped<IClaimsTransformation, SupabaseClaimsTransformation>(
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
+
+// Auto-migrate on startup to bypass EF CLI tool issues
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<ApplicationDbContext>();
+        context.Database.Migrate();
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while migrating the database.");
+    }
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
