@@ -29,4 +29,12 @@ public class InstructorStatsController : ControllerBase
         var stats = await _instructorService.GetInstructorStatsAsync(supabaseUserId);
         return Ok(stats);
     }
+
+    [AllowAnonymous]
+    [HttpGet("public/{supabaseId}")]
+    public async Task<IActionResult> GetPublicStats(string supabaseId)
+    {
+        var stats = await _instructorService.GetInstructorStatsAsync(supabaseId);
+        return Ok(stats);
+    }
 }

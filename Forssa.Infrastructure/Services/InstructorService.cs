@@ -29,7 +29,11 @@ public class InstructorService : IInstructorService
             .Where(c => c.Instructor_id == supabaseGuid)
             .ToListAsync();
 
-        if (courses.Count == 0)
+        var instructor = await _context.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.SupabaseId == supabaseUserId);
+
+        if (courses.Count == 0 && instructor == null)
         {
             return new InstructorStatsDTO();
         }
@@ -57,7 +61,11 @@ public class InstructorService : IInstructorService
             TotalCourses = courses.Count,
             TotalStudents = totalStudents,
             TotalRevenue = totalRevenue,
-            TotalReviews = 0
+            TotalReviews = 0,
+            FullName = instructor?.FullName,
+            Bio = instructor?.Bio,
+            AvatarUrl = instructor?.AvatarUrl,
+            InstructorPosition = instructor?.InstructorPosition
         };
     }
 }
