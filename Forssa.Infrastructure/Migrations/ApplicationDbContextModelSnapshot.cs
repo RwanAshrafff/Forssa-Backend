@@ -229,6 +229,7 @@ namespace Forssa.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+
                     b.HasIndex("UserId", "LessonId")
                         .IsUnique();
 
@@ -280,6 +281,7 @@ namespace Forssa.Infrastructure.Migrations
                         .HasColumnName("user_id");
 
                     b.HasKey("Id");
+
 
                     b.HasIndex("UserId", "LessonId")
                         .IsUnique();
@@ -474,6 +476,7 @@ namespace Forssa.Infrastructure.Migrations
 
                     b.Navigation("Module");
                 });
+
 
             modelBuilder.Entity("Forssa.Domain.Entities.Module", b =>
                 {
