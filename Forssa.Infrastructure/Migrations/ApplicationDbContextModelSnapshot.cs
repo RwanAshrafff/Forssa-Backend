@@ -413,6 +413,9 @@ namespace Forssa.Infrastructure.Migrations
                     b.Property<string>("FullName")
                         .HasColumnType("text");
 
+                    b.Property<string>("InstructorPosition")
+                        .HasColumnType("text");
+
                     b.Property<bool>("IsDeleted")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")

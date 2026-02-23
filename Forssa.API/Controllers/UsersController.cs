@@ -35,6 +35,7 @@ public class UsersController : ControllerBase
         var bio = User.FindFirst("bio")?.Value;
         var avatarUrl = User.FindFirst("avatar_url")?.Value;
         var username = User.FindFirst("username")?.Value;
+        var instructorPosition = User.FindFirst("instructor_position")?.Value;
         
         if (string.IsNullOrEmpty(role))
         {
@@ -50,7 +51,8 @@ public class UsersController : ControllerBase
             fullName,
             bio,
             avatarUrl,
-            username);
+            username,
+            instructorPosition);
             
         return Ok(userDto);
     }
@@ -87,6 +89,13 @@ public class UsersController : ControllerBase
 
         _logger.LogInformation("Actively updating profile for user {Email}", email);
 
+        var currentRole = User.FindFirst(ClaimTypes.Role)?.Value;
+        if (string.Equals(currentRole, "Instructor", StringComparison.OrdinalIgnoreCase)
+            && string.IsNullOrWhiteSpace(request.InstructorPosition))
+        {
+            return BadRequest("Instructor position is required for instructors.");
+        }
+
         var userDto = await _userService.SyncUserAsync(
             supabaseId, 
             email ?? string.Empty, 
@@ -94,11 +103,12 @@ public class UsersController : ControllerBase
             request.FullName,
             request.Bio,
             request.AvatarUrl,
-            request.Username);
+            request.Username,
+            request.InstructorPosition);
             
         return Ok(userDto);
     }
 }
 
 public record UpdateRoleRequest(string Role);
-public record UserProfileRequest(string? FullName, string? Bio, string? AvatarUrl, string? Username);
+public record UserProfileRequest(string? FullName, string? Bio, string? AvatarUrl, string? Username, string? InstructorPosition);

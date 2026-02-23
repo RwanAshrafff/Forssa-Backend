@@ -13,6 +13,7 @@ public class User : BaseEntity
     public string? Bio { get; private set; }
     public string? AvatarUrl { get; private set; }
     public string? Username { get; private set; }
+    public string? InstructorPosition { get; private set; }
 
     // Required for EF Core
     private User() { }
@@ -24,12 +25,13 @@ public class User : BaseEntity
         Role = role;
     }
 
-    public void UpdateProfile(string? fullName, string? bio, string? avatarUrl, string? username)
+    public void UpdateProfile(string? fullName, string? bio, string? avatarUrl, string? username, string? instructorPosition)
     {
         FullName = fullName;
         Bio = bio;
         AvatarUrl = avatarUrl;
         Username = username;
+        InstructorPosition = instructorPosition;
         UpdatedAt = DateTime.UtcNow;
     }
 

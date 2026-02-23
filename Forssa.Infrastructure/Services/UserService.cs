@@ -17,7 +17,7 @@ public class UserService : BaseService<User, UserDTO>, IUserService
         _context = context;
     }
 
-    public async Task<UserDTO> SyncUserAsync(string supabaseId, string email, string? role = null, string? fullName = null, string? bio = null, string? avatarUrl = null, string? username = null)
+    public async Task<UserDTO> SyncUserAsync(string supabaseId, string email, string? role = null, string? fullName = null, string? bio = null, string? avatarUrl = null, string? username = null, string? instructorPosition = null)
     {
         // Use direct DbContext to avoid any caching/tracking issues
         var existingUser = await _context.Users
@@ -27,7 +27,8 @@ public class UserService : BaseService<User, UserDTO>, IUserService
         {
             // New user - create with all metadata
             var newUser = new User(supabaseId, email, role ?? "Student");
-            newUser.UpdateProfile(fullName, bio, avatarUrl, username);
+            var profileInstructorPosition = NormalizePositionForRole(role ?? "Student", instructorPosition);
+            newUser.UpdateProfile(fullName, bio, avatarUrl, username, profileInstructorPosition);
 
             try 
             {
@@ -61,9 +62,11 @@ public class UserService : BaseService<User, UserDTO>, IUserService
             changed = true; 
         }
 
-        // Always attempt profile update (domain method handles internal comparison if needed, 
-        // but for simplicity we'll just track if we should save)
-        existingUser.UpdateProfile(fullName, bio, avatarUrl, username);
+        var effectiveRole = role ?? existingUser.Role;
+        var effectivePosition = NormalizePositionForRole(effectiveRole, instructorPosition ?? existingUser.InstructorPosition);
+
+        // Always attempt profile update
+        existingUser.UpdateProfile(fullName, bio, avatarUrl, username, effectivePosition);
         changed = true;
 
         if (changed)
@@ -73,6 +76,21 @@ public class UserService : BaseService<User, UserDTO>, IUserService
         }
 
         return _mapper.Map<UserDTO>(existingUser);
+    }
+
+    private static string? NormalizePositionForRole(string role, string? instructorPosition)
+    {
+        var normalizedRole = role.Trim();
+        var normalizedPosition = string.IsNullOrWhiteSpace(instructorPosition)
+            ? null
+            : instructorPosition.Trim();
+
+        if (normalizedRole.Equals("Instructor", StringComparison.OrdinalIgnoreCase))
+        {
+            return normalizedPosition;
+        }
+
+        return null;
     }
 }
 
