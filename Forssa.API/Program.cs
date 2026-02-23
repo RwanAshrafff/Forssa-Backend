@@ -120,6 +120,12 @@ public class SupabaseClaimsTransformation : IClaimsTransformation
                 // 5. Username
                 if (root.TryGetProperty("username", out var userProp))
                     identity.AddClaim(new Claim("username", userProp.GetString() ?? ""));
+
+                // 6. Instructor Position
+                if (root.TryGetProperty("instructor_position", out var instructorPositionProp))
+                    identity.AddClaim(new Claim("instructor_position", instructorPositionProp.GetString() ?? ""));
+                else if (root.TryGetProperty("position", out var positionProp))
+                    identity.AddClaim(new Claim("instructor_position", positionProp.GetString() ?? ""));
             }
             catch { /* Ignore parsing errors */ }
         }

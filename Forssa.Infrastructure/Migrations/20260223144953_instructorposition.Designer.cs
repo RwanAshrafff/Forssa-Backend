@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Forssa.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260222144911_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20260223144953_instructorposition")]
+    partial class instructorposition
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -414,6 +414,9 @@ namespace Forssa.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("FullName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("InstructorPosition")
                         .HasColumnType("text");
 
                     b.Property<bool>("IsDeleted")
