@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Forssa.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260223221145_AddQuizzes")]
-    partial class AddQuizzes
+    [Migration("20260224203326_AddFeedbackToQuizSubmissions")]
+    partial class AddFeedbackToQuizSubmissions
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -510,6 +510,10 @@ namespace Forssa.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at")
                         .HasDefaultValueSql("now()");
+
+                    b.Property<string>("Feedback")
+                        .HasColumnType("text")
+                        .HasColumnName("feedback");
 
                     b.Property<bool>("IsDeleted")
                         .ValueGeneratedOnAdd()

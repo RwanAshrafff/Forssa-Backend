@@ -147,7 +147,8 @@ public class QuizzesController : BaseController
             QuizId = id,
             Score = scorePercent,
             IsPassed = isPassed,
-            SubmittedAt = DateTime.UtcNow
+            SubmittedAt = DateTime.UtcNow,
+            Feedback = isPassed ? "Excellent work! You've mastered this topic." : "Close, but you need a bit more practice. Review the lessons and try again!"
         };
 
         _context.QuizSubmissions.Add(submission);
@@ -159,8 +160,52 @@ public class QuizzesController : BaseController
             IsPassed = isPassed,
             EarnedPoints = earnedPoints,
             TotalPoints = totalPoints,
-            PassingScore = quiz.PassingScore
+            PassingScore = quiz.PassingScore,
+            Feedback = isPassed ? "Excellent work! You've mastered this topic." : "Close, but you need a bit more practice. Review the lessons and try again!"
         }, isPassed ? "Congratulations! You passed the quiz!" : "Quiz submitted. You did not meet the passing score.");
+    }
+
+    // GET: api/Quizzes/{id}/latest-submission - Get latest submission for the current user
+    [HttpGet("{id}/latest-submission")]
+    [Authorize]
+    public async Task<IActionResult> GetLatestSubmission(Guid id)
+    {
+        var supabaseId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (supabaseId == null) return UnauthorizedResult("Not authenticated");
+
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.SupabaseId == supabaseId);
+        if (user == null) return NotFoundResult("User not found");
+
+        var submission = await _context.QuizSubmissions
+            .Where(s => s.QuizId == id && s.UserId == user.Id)
+            .OrderByDescending(s => s.SubmittedAt)
+            .Select(s => new
+            {
+                s.Score,
+                s.IsPassed,
+                s.SubmittedAt,
+                s.Feedback
+            })
+            .FirstOrDefaultAsync();
+
+        if (submission == null)
+            return NotFoundResult("No submissions found");
+
+        // Calculate points based on the quiz metadata since we don't store individual question results yet
+        var quiz = await _context.Quizzes.Include(q => q.Questions).FirstOrDefaultAsync(q => q.Id == id);
+        int totalPoints = quiz?.Questions.Sum(q => q.Points) ?? 0;
+        int earnedPoints = (int)Math.Round((submission.Score / 100) * totalPoints);
+
+        return HandleResult(new
+        {
+            submission.Score,
+            submission.IsPassed,
+            submission.SubmittedAt,
+            EarnedPoints = earnedPoints,
+            TotalPoints = totalPoints,
+            PassingScore = quiz?.PassingScore ?? 80,
+            Feedback = submission.Feedback ?? (submission.IsPassed ? "Excellent work! You've mastered this topic." : "Close, but you need a bit more practice. Review the lessons and try again!")
+        }, "Latest submission retrieved");
     }
 
     // GET: api/Quizzes/module/{moduleId} - Get all quizzes for a module

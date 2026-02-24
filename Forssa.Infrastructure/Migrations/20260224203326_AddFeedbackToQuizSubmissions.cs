@@ -1,12 +1,11 @@
-﻿using System;
-using Microsoft.EntityFrameworkCore.Migrations;
+﻿using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace Forssa.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class AddQuizzes : Migration
+    public partial class AddFeedbackToQuizSubmissions : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -80,6 +79,7 @@ namespace Forssa.Infrastructure.Migrations
                     quiz_id = table.Column<Guid>(type: "uuid", nullable: false),
                     score = table.Column<decimal>(type: "numeric", nullable: false),
                     is_passed = table.Column<bool>(type: "boolean", nullable: false),
+                    feedback = table.Column<string>(type: "text", nullable: true),
                     submitted_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()"),
                     updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),

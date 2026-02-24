@@ -63,6 +63,8 @@ public class QuizSubmission : BaseEntity
     public bool IsPassed { get; set; }
     [Column("submitted_at")]
     public DateTime SubmittedAt { get; set; } = DateTime.UtcNow;
+    [Column("feedback")]
+    public string? Feedback { get; set; }
 
     // Relationships
     public User User { get; set; } = null!;
