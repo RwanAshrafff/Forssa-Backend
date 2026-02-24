@@ -21,29 +21,30 @@ public class CoursesController : BaseController
     {
         try
         {
-            // First stop the course to get related data if needed
+            // Load course with all related structural data
             var course = await _context.Courses
                 .Include(c => c.Modules)
                     .ThenInclude(m => m.Lessons)
+                .Include(c => c.Modules)
+                    .ThenInclude(m => m.Quizzes)
+                        .ThenInclude(q => q.Questions)
+                            .ThenInclude(qn => qn.Options)
                 .FirstOrDefaultAsync(c => c.Id == id);
 
             if (course == null)
                 return NotFoundResult("Course not found");
 
-            // Define deletion in a transaction to ensure integrity
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
                 // 1. Delete Enrollments
                 var enrollments = await _context.Enrollments.Where(e => e.CourseId == id).ToListAsync();
-                if (enrollments.Any())
-                {
-                    _context.Enrollments.RemoveRange(enrollments);
-                }
+                if (enrollments.Any()) _context.Enrollments.RemoveRange(enrollments);
 
-                // 2. Lesson related data (Progress and Notes)
+                // 2. Process Modules for related data
                 foreach (var module in course.Modules)
                 {
+                    // a. Lesson related data
                     var lessonIds = module.Lessons.Select(l => l.Id).ToList();
                     if (lessonIds.Any())
                     {
@@ -53,11 +54,20 @@ public class CoursesController : BaseController
                         var notes = await _context.LessonNotes.Where(ln => lessonIds.Contains(ln.LessonId)).ToListAsync();
                         if (notes.Any()) _context.LessonNotes.RemoveRange(notes);
                     }
+
+                    // b. Quiz related data
+                    foreach (var quiz in module.Quizzes)
+                    {
+                        // Delete submissions first (FK dependency)
+                        var submissions = await _context.QuizSubmissions.Where(qs => qs.QuizId == quiz.Id).ToListAsync();
+                        if (submissions.Any()) _context.QuizSubmissions.RemoveRange(submissions);
+                        
+                        // Questions and Options are usually handled by EF cascade if configured,
+                        // but since we loaded them, EF will track them and handle it.
+                    }
                 }
 
-                // 3. Delete course (Cascades to modules and lessons due to EF configuration in ApplicationDbContext)
-                // Note: Even if cascades are not perfectly synced in DB, removing the parent tracking object 
-                // and calling SaveChanges will typically trigger EF cascades if configured in OnModelCreating.
+                // 3. Delete course (Cascades to modules, lessons, and quizzes due to EF configuration)
                 _context.Courses.Remove(course);
 
                 await _context.SaveChangesAsync();
@@ -65,10 +75,10 @@ public class CoursesController : BaseController
 
                 return HandleResult(true, "Course and all related data deleted successfully");
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                throw;
+                return InternalServerError($"Transaction failed: {ex.Message}");
             }
         }
         catch (Exception ex)
