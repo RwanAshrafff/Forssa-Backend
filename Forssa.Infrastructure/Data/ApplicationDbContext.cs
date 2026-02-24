@@ -21,6 +21,10 @@ public class ApplicationDbContext : DbContext
     public DbSet<LessonProgress> LessonProgress { get; set; }
     public DbSet<LessonNote> LessonNotes { get; set; }
     public DbSet<Enrollment> Enrollments { get; set; }
+    public DbSet<Quiz> Quizzes { get; set; }
+    public DbSet<Question> Questions { get; set; }
+    public DbSet<Option> Options { get; set; }
+    public DbSet<QuizSubmission> QuizSubmissions { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -43,6 +47,11 @@ public class ApplicationDbContext : DbContext
             entity.HasMany(m => m.Lessons)
                   .WithOne(l => l.Module)
                   .HasForeignKey(l => l.Module_id)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasMany(m => m.Quizzes)
+                  .WithOne(q => q.Module)
+                  .HasForeignKey(q => q.ModuleId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
 
@@ -85,6 +94,47 @@ public class ApplicationDbContext : DbContext
 
         // Product
         modelBuilder.Entity<Product>().ToTable("Products");
+
+        // Quizzes
+        modelBuilder.Entity<Quiz>(entity =>
+        {
+            entity.ToTable("quizzes");
+            entity.HasMany(q => q.Questions)
+                  .WithOne(qn => qn.Quiz)
+                  .HasForeignKey(qn => qn.QuizId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Questions
+        modelBuilder.Entity<Question>(entity =>
+        {
+            entity.ToTable("questions");
+            entity.HasMany(q => q.Options)
+                  .WithOne(o => o.Question)
+                  .HasForeignKey(o => o.QuestionId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Options
+        modelBuilder.Entity<Option>(entity =>
+        {
+            entity.ToTable("options");
+        });
+
+        // Quiz Submissions
+        modelBuilder.Entity<QuizSubmission>(entity =>
+        {
+            entity.ToTable("quiz_submissions");
+            entity.HasOne(qs => qs.User)
+                  .WithMany()
+                  .HasForeignKey(qs => qs.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(qs => qs.Quiz)
+                  .WithMany()
+                  .HasForeignKey(qs => qs.QuizId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
 
         // User
         modelBuilder.Entity<User>(entity =>

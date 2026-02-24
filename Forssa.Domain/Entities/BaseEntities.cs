@@ -12,7 +12,7 @@ public abstract class BaseEntity
     public DateTime? UpdatedAt { get; set; }
     [Column("is_deleted")]
     public bool IsDeleted { get; set; }
-    [Column("deletedAt")]
+    [NotMapped]
     public DateTime? DeletedAt { get; set; }
 }
 

@@ -90,9 +90,6 @@ public class SupabaseClaimsTransformation : IClaimsTransformation
     {
         var identity = (ClaimsIdentity)principal.Identity!;
 
-        if (identity.HasClaim(c => c.Type == ClaimTypes.Role))
-            return principal;
-
         var userMetadataJson = identity.FindFirst("user_metadata")?.Value;
         if (!string.IsNullOrEmpty(userMetadataJson))
         {
@@ -103,7 +100,11 @@ public class SupabaseClaimsTransformation : IClaimsTransformation
 
                 // 1. Role
                 if (root.TryGetProperty("role", out var roleProp))
-                    identity.AddClaim(new Claim(ClaimTypes.Role, roleProp.GetString() ?? "Student"));
+                {
+                    var role = roleProp.GetString() ?? "Student";
+                    var normalizedRole = char.ToUpper(role[0]) + role.Substring(1).ToLower();
+                    identity.AddClaim(new Claim(ClaimTypes.Role, normalizedRole));
+                }
 
                 // 2. Full Name
                 if (root.TryGetProperty("full_name", out var nameProp))
@@ -130,12 +131,15 @@ public class SupabaseClaimsTransformation : IClaimsTransformation
             catch { /* Ignore parsing errors */ }
         }
 
-        // Fallback for role if not in JSON (e.g. flattened by some middleware)
+        // Fallback for role
         if (!identity.HasClaim(c => c.Type == ClaimTypes.Role))
         {
             var role = identity.FindFirst("user_metadata.role")?.Value ?? identity.FindFirst("role")?.Value;
             if (!string.IsNullOrEmpty(role))
-                identity.AddClaim(new Claim(ClaimTypes.Role, role));
+            {
+                var normalizedRole = char.ToUpper(role[0]) + role.Substring(1).ToLower();
+                identity.AddClaim(new Claim(ClaimTypes.Role, normalizedRole));
+            }
         }
 
         return principal;

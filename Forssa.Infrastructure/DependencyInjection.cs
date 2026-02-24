@@ -30,6 +30,7 @@ public static class DependencyInjection
         services.AddScoped<ProductService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<ICertificateService, CertificateService>();
+        services.AddScoped<IInstructorService, InstructorService>();
         
         return services;
     }
