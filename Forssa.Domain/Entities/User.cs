@@ -15,6 +15,10 @@ public class User : BaseEntity
     public string? Username { get; private set; }
     public string? InstructorPosition { get; private set; }
 
+    // Follow Counts
+    public int FollowersCount { get; private set; }
+    public int FollowingCount { get; private set; }
+
     // Required for EF Core
     private User() { }
 
@@ -51,6 +55,32 @@ public class User : BaseEntity
             Role = role;
             UpdatedAt = DateTime.UtcNow;
         }
+    }
+
+    public void IncrementFollowersCount()
+    {
+        FollowersCount++;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void DecrementFollowersCount()
+    {
+        if (FollowersCount > 0)
+            FollowersCount--;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void IncrementFollowingCount()
+    {
+        FollowingCount++;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void DecrementFollowingCount()
+    {
+        if (FollowingCount > 0)
+            FollowingCount--;
+        UpdatedAt = DateTime.UtcNow;
     }
 }
 
