@@ -26,6 +26,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Option> Options { get; set; }
     public DbSet<QuizSubmission> QuizSubmissions { get; set; }
     public DbSet<UserFollow> UserFollows { get; set; }
+    public DbSet<SuccessStory> SuccessStories { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -159,6 +160,21 @@ public class ApplicationDbContext : DbContext
                   .WithMany()
                   .HasForeignKey(f => f.FollowedId)
                   .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Success Stories
+        modelBuilder.Entity<SuccessStory>(entity =>
+        {
+            entity.ToTable("success_stories");
+            entity.HasOne(s => s.User)
+                  .WithMany()
+                  .HasForeignKey(s => s.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(s => s.Course)
+                  .WithMany()
+                  .HasForeignKey(s => s.CourseId)
+                  .OnDelete(DeleteBehavior.SetNull);
         });
 
         // Configure global defaults and query filter for soft delete

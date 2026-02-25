@@ -104,6 +104,10 @@ namespace Forssa.Infrastructure.Migrations
                         .HasDefaultValue(false)
                         .HasColumnName("is_deleted");
 
+                    b.Property<bool>("IsPointsAwarded")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_points_awarded");
+
                     b.Property<Guid>("StudentId")
                         .HasColumnType("uuid")
                         .HasColumnName("student_id");
@@ -551,6 +555,60 @@ namespace Forssa.Infrastructure.Migrations
                     b.ToTable("quiz_submissions", (string)null);
                 });
 
+            modelBuilder.Entity("Forssa.Domain.Entities.SuccessStory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<string>("Achievement")
+                        .HasColumnType("text")
+                        .HasColumnName("achievement");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("content");
+
+                    b.Property<Guid?>("CourseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("course_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_deleted");
+
+                    b.Property<int>("Rating")
+                        .HasColumnType("integer")
+                        .HasColumnName("rating");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CourseId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("success_stories", (string)null);
+                });
+
             modelBuilder.Entity("Forssa.Domain.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -592,6 +650,9 @@ namespace Forssa.Infrastructure.Migrations
                         .HasColumnType("boolean")
                         .HasDefaultValue(false)
                         .HasColumnName("is_deleted");
+
+                    b.Property<int>("Points")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Role")
                         .IsRequired()
@@ -750,6 +811,24 @@ namespace Forssa.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Quiz");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Forssa.Domain.Entities.SuccessStory", b =>
+                {
+                    b.HasOne("Forssa.Domain.Entities.Course", "Course")
+                        .WithMany()
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Forssa.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Course");
 
                     b.Navigation("User");
                 });

@@ -90,6 +90,8 @@ public class Enrollment : BaseEntity
     public Guid StudentId { get; set; }
     [Column("course_id")]
     public Guid CourseId { get; set; }
+    [Column("is_points_awarded")]
+    public bool IsPointsAwarded { get; set; } = false;
 
     // Relationships
     public User Student { get; set; } = null!;
