@@ -17,6 +17,7 @@ public class HomeFeedDTO
     public string Role { get; set; } = string.Empty;
     public IReadOnlyList<HomeCourseFeedItemDTO> NewCourses { get; set; } = Array.Empty<HomeCourseFeedItemDTO>();
     public IReadOnlyList<HomeCertificateFeedItemDTO> NewCertificates { get; set; } = Array.Empty<HomeCertificateFeedItemDTO>();
+    public IReadOnlyList<FollowUserDTO> NewFollowers { get; set; } = Array.Empty<FollowUserDTO>();
 }
 
 public class HomeCourseFeedItemDTO

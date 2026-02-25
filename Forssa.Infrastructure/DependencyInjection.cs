@@ -32,6 +32,8 @@ public static class DependencyInjection
         services.AddScoped<ICertificateService, CertificateService>();
         services.AddScoped<IInstructorService, InstructorService>();
         services.AddScoped<IFollowService, FollowService>();
+        services.AddScoped<ISuccessStoryService, SuccessStoryService>();
+        services.AddScoped<IUserProgressService, UserProgressService>();
         
         return services;
     }

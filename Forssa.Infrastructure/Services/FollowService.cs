@@ -188,9 +188,17 @@ public class FollowService : IFollowService
             .Distinct()
             .ToList();
 
+        // Include current user in student IDs to show their own certificates
+        if (normalizedRole == "Student" && !followedStudentIds.Contains(currentUser.Id))
+        {
+            followedStudentIds.Add(currentUser.Id);
+        }
+
         IReadOnlyList<HomeCourseFeedItemDTO> courses = Array.Empty<HomeCourseFeedItemDTO>();
         IReadOnlyList<HomeCertificateFeedItemDTO> certificates = Array.Empty<HomeCertificateFeedItemDTO>();
+        IReadOnlyList<FollowUserDTO> followers = Array.Empty<FollowUserDTO>();
 
+        // 1. Fetch Followed Instructor Courses
         if (followedInstructorIds.Count > 0)
         {
             courses = await _context.Courses
@@ -213,6 +221,28 @@ public class FollowService : IFollowService
                 .ToListAsync();
         }
 
+        // 2. Fetch Recent Followers
+        followers = await _context.UserFollows
+            .Where(f => f.FollowedId == currentUser.Id)
+            .Join(_context.Users,
+                f => f.FollowerId,
+                u => u.Id,
+                (f, u) => new FollowUserDTO
+                {
+                    UserId = u.Id,
+                    SupabaseId = u.SupabaseId,
+                    Role = u.Role,
+                    FullName = u.FullName,
+                    Username = u.Username,
+                    AvatarUrl = u.AvatarUrl,
+                    InstructorPosition = u.InstructorPosition,
+                    FollowedAt = f.CreatedAt
+                })
+            .OrderByDescending(x => x.FollowedAt)
+            .Take(10)
+            .ToListAsync();
+
+        // 3. Fetch Certificates (Followed students + Self)
         if (followedStudentIds.Count > 0)
         {
             var enrollments = await _context.Enrollments
@@ -306,7 +336,8 @@ public class FollowService : IFollowService
         {
             Role = normalizedRole,
             NewCourses = courses,
-            NewCertificates = certificates
+            NewCertificates = certificates,
+            NewFollowers = followers
         };
     }
 

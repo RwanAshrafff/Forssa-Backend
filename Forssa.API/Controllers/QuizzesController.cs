@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using Forssa.Domain.Entities;
+using Forssa.Application.Interfaces;
 
 namespace Forssa.API.Controllers;
 
@@ -12,10 +13,12 @@ namespace Forssa.API.Controllers;
 public class QuizzesController : BaseController
 {
     private readonly ApplicationDbContext _context;
+    private readonly IUserProgressService _progressService;
 
-    public QuizzesController(ApplicationDbContext context)
+    public QuizzesController(ApplicationDbContext context, IUserProgressService progressService)
     {
         _context = context;
+        _progressService = progressService;
     }
 
     // GET: api/Quizzes/{id} - For students to take the quiz (no correct answers exposed)
@@ -153,6 +156,11 @@ public class QuizzesController : BaseController
 
         _context.QuizSubmissions.Add(submission);
         await _context.SaveChangesAsync();
+
+        if (isPassed)
+        {
+            await _progressService.CompleteQuizAsync(supabaseId, id, scorePercent, isPassed);
+        }
 
         return HandleResult(new
         {

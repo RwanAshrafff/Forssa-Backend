@@ -19,6 +19,9 @@ public class User : BaseEntity
     public int FollowersCount { get; private set; }
     public int FollowingCount { get; private set; }
 
+    // Gamification
+    public int Points { get; private set; }
+
     // Required for EF Core
     private User() { }
 
@@ -27,6 +30,12 @@ public class User : BaseEntity
         SupabaseId = supabaseId;
         Email = email;
         Role = role;
+    }
+
+    public void AddPoints(int points)
+    {
+        Points += points;
+        UpdatedAt = DateTime.UtcNow;
     }
 
     public void UpdateProfile(string? fullName, string? bio, string? avatarUrl, string? username, string? instructorPosition)
