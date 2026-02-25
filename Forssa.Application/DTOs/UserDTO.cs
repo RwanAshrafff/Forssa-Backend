@@ -10,5 +10,7 @@ public class UserDTO : BaseDTO
     public string? AvatarUrl { get; set; }
     public string? Username { get; set; }
     public string? InstructorPosition { get; set; }
+    public int FollowersCount { get; set; }
+    public int FollowingCount { get; set; }
 }
 

@@ -25,6 +25,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Question> Questions { get; set; }
     public DbSet<Option> Options { get; set; }
     public DbSet<QuizSubmission> QuizSubmissions { get; set; }
+    public DbSet<UserFollow> UserFollows { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -141,6 +142,23 @@ public class ApplicationDbContext : DbContext
         {
             entity.ToTable("Users");
             entity.HasIndex(u => u.SupabaseId).IsUnique();
+        });
+
+        // User follows
+        modelBuilder.Entity<UserFollow>(entity =>
+        {
+            entity.ToTable("user_follows", t => t.HasCheckConstraint("CK_user_follows_not_self", "follower_id <> followed_id"));
+            entity.HasIndex(f => new { f.FollowerId, f.FollowedId }).IsUnique();
+
+            entity.HasOne(f => f.Follower)
+                  .WithMany()
+                  .HasForeignKey(f => f.FollowerId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(f => f.Followed)
+                  .WithMany()
+                  .HasForeignKey(f => f.FollowedId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
 
         // Configure global defaults and query filter for soft delete
