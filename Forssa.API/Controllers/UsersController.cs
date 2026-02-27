@@ -1,5 +1,8 @@
 using Forssa.Application.Interfaces;
+using Forssa.Domain.Entities;
+using Forssa.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
@@ -11,11 +14,13 @@ public class UsersController : ControllerBase
 {
     private readonly IUserService _userService;
     private readonly ILogger<UsersController> _logger;
+    private readonly ApplicationDbContext _context;
 
-    public UsersController(IUserService userService, ILogger<UsersController> logger)
+    public UsersController(IUserService userService, ILogger<UsersController> logger, ApplicationDbContext context)
     {
         _userService = userService;
         _logger = logger;
+        _context = context;
     }
 
     [Authorize]
@@ -72,8 +77,55 @@ public class UsersController : ControllerBase
         if (string.IsNullOrEmpty(request.Role))
             return BadRequest("Role is required.");
 
+        if (string.Equals(request.Role, "Instructor", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(request.Role, "Admin", StringComparison.OrdinalIgnoreCase))
+        {
+            return BadRequest("Direct role change to Instructor/Admin is not allowed. Submit an instructor approval request.");
+        }
+
         var userDto = await _userService.SyncUserAsync(supabaseId, email ?? string.Empty, request.Role);
         return Ok(userDto);
+    }
+
+    [Authorize]
+    [HttpPost("me/request-instructor")]
+    public async Task<IActionResult> RequestInstructorApproval([FromBody] InstructorApprovalRequestDto request)
+    {
+        var supabaseId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                        ?? User.FindFirst("sub")?.Value;
+
+        if (string.IsNullOrEmpty(supabaseId))
+            return BadRequest("User ID (sub) not found in token.");
+
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.SupabaseId == supabaseId);
+        if (user == null)
+            return NotFound("User not found.");
+
+        if (string.Equals(user.Role, "Instructor", StringComparison.OrdinalIgnoreCase))
+            return BadRequest("You are already an instructor.");
+
+        var existingPending = await _context.InstructorApprovalRequests
+            .AnyAsync(r => r.UserId == user.Id && r.Status == "Pending");
+
+        if (existingPending)
+            return BadRequest("You already have a pending instructor request.");
+
+        var approvalRequest = new Forssa.Domain.Entities.InstructorApprovalRequest
+        {
+            UserId = user.Id,
+            RequestedPosition = string.IsNullOrWhiteSpace(request.InstructorPosition) ? null : request.InstructorPosition.Trim(),
+            Status = "Pending"
+        };
+
+        _context.InstructorApprovalRequests.Add(approvalRequest);
+        await _context.SaveChangesAsync();
+
+        return Ok(new
+        {
+            message = "Instructor approval request submitted successfully.",
+            requestId = approvalRequest.Id,
+            status = approvalRequest.Status
+        });
     }
     [Authorize]
     [HttpPut("profile")]
@@ -112,3 +164,4 @@ public class UsersController : ControllerBase
 
 public record UpdateRoleRequest(string Role);
 public record UserProfileRequest(string? FullName, string? Bio, string? AvatarUrl, string? Username, string? InstructorPosition);
+public record InstructorApprovalRequestDto(string? InstructorPosition);

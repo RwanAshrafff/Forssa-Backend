@@ -1,5 +1,7 @@
 using Forssa.Infrastructure;
 using Forssa.Infrastructure.Data;
+using Forssa.API.Security;
+using Forssa.Domain.Entities;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -57,6 +59,35 @@ using (var scope = app.Services.CreateScope())
     {
         var context = services.GetRequiredService<ApplicationDbContext>();
         context.Database.Migrate();
+
+        var configuration = services.GetRequiredService<IConfiguration>();
+        var adminEmail = configuration["AdminCredentials:Email"];
+        var adminPassword = configuration["AdminCredentials:Password"];
+
+        if (!string.IsNullOrWhiteSpace(adminEmail) && !string.IsNullOrWhiteSpace(adminPassword))
+        {
+            var normalizedEmail = adminEmail.Trim().ToLowerInvariant();
+            var existingAdmin = context.Set<AdminCredential>().FirstOrDefault(a => a.Email == normalizedEmail);
+            var passwordHash = PasswordHashing.HashPassword(adminPassword);
+
+            if (existingAdmin == null)
+            {
+                context.Set<AdminCredential>().Add(new AdminCredential
+                {
+                    Email = normalizedEmail,
+                    PasswordHash = passwordHash,
+                    IsActive = true
+                });
+            }
+            else
+            {
+                existingAdmin.PasswordHash = passwordHash;
+                existingAdmin.IsActive = true;
+                context.Set<AdminCredential>().Update(existingAdmin);
+            }
+
+            context.SaveChanges();
+        }
     }
     catch (Exception ex)
     {
