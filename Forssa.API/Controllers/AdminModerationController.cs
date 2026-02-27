@@ -66,7 +66,7 @@ public class AdminModerationController : BaseController
         if (user == null)
             return NotFoundResult("User not found.");
 
-        user.UpdateRole("Instructor");
+        user.UpdateRole("instructor");
         var position = string.IsNullOrWhiteSpace(request?.InstructorPositionOverride)
             ? approvalRequest.RequestedPosition
             : request!.InstructorPositionOverride!.Trim();
@@ -78,6 +78,27 @@ public class AdminModerationController : BaseController
         approvalRequest.ReviewNote = string.IsNullOrWhiteSpace(request?.ReviewNote) ? null : request!.ReviewNote!.Trim();
 
         await _context.SaveChangesAsync();
+
+        // --- NEW: Securely Update Supabase Metadata via SQL ---
+        try
+        {
+            // Update the auth.users table directly to set the role and remove the pending flag
+            // This ensures the middleware immediately recognizes the new role
+            var sql = @"
+                UPDATE auth.users 
+                SET raw_user_metadata = (
+                    coalesce(raw_user_metadata, '{}'::jsonb) || jsonb_build_object('role', 'instructor')
+                ) - 'is_pending_instructor'
+                WHERE id = {0}::uuid";
+
+            await _context.Database.ExecuteSqlRawAsync(sql, user.SupabaseId);
+        }
+        catch (Exception ex)
+        {
+            // Log error but don't fail the whole request since the DB role is already updated
+            Console.WriteLine($"Warning: Failed to update Supabase metadata for user {user.SupabaseId}: {ex.Message}");
+        }
+        // -----------------------------------------------------
 
         return HandleResult(new { requestId, status = approvalRequest.Status }, "Instructor request approved.");
     }

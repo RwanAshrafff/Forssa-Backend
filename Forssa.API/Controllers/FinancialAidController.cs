@@ -9,7 +9,7 @@ namespace Forssa.API.Controllers;
 
 [ApiController]
 [Authorize]
-[Route("api/[controller]")]
+[Route("api/financial-aid")]
 public class FinancialAidController : BaseController
 {
     private readonly ApplicationDbContext _context;
@@ -90,6 +90,40 @@ public class FinancialAidController : BaseController
                 .ToListAsync();
 
             return HandleResult(documents, "Financial aid documents retrieved successfully.");
+        }
+        catch (Exception ex)
+        {
+            return InternalServerError(ex.Message);
+        }
+    }
+
+    [HttpGet("status")]
+    public async Task<IActionResult> GetStatus()
+    {
+        try
+        {
+            var supabaseId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                            ?? User.FindFirst("sub")?.Value;
+
+            if (string.IsNullOrWhiteSpace(supabaseId))
+                return BadRequestResult("User ID not found in token.");
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.SupabaseId == supabaseId);
+            if (user == null)
+                return NotFoundResult("User not found.");
+
+            var latestDocument = await _context.FinancialAidDocuments
+                .Where(d => d.UserId == user.Id)
+                .OrderByDescending(d => d.CreatedAt)
+                .Select(d => new { d.Status })
+                .FirstOrDefaultAsync();
+
+            return HandleResult(new
+            {
+                status = latestDocument?.Status,
+                isApproved = latestDocument?.Status == "Approved",
+                isPending = latestDocument?.Status == "Pending"
+            }, "Financial aid status retrieved.");
         }
         catch (Exception ex)
         {

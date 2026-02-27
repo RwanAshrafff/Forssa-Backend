@@ -23,6 +23,7 @@ public class SuccessStoryService : ISuccessStoryService
         var stories = await _context.SuccessStories
             .Include(s => s.User)
             .Include(s => s.Course)
+            .Where(s => s.ApprovalStatus == "Approved")
             .OrderByDescending(s => s.CreatedAt)
             .ToListAsync();
 
@@ -69,9 +70,12 @@ public class SuccessStoryService : ISuccessStoryService
             .Select(u => new { u.Id, u.Points })
             .FirstOrDefaultAsync();
 
+        Console.WriteLine($"[DEBUG] SupabaseId: {supabaseId}, UserFound: {user != null}, Points: {user?.Points}");
+
         if (user == null || user.Points < 100) return false;
 
         var alreadySubmitted = await _context.SuccessStories.AnyAsync(s => s.UserId == user.Id);
+        Console.WriteLine($"[DEBUG] AlreadySubmitted: {alreadySubmitted}");
         return !alreadySubmitted;
     }
 }

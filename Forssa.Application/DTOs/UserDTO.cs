@@ -12,5 +12,9 @@ public class UserDTO : BaseDTO
     public string? InstructorPosition { get; set; }
     public int FollowersCount { get; set; }
     public int FollowingCount { get; set; }
+    public bool HasPendingInstructorRequest { get; set; }
+    public bool HasPendingFinancialAid { get; set; }
+    public bool HasApprovedFinancialAid { get; set; }
+    public bool HasPendingSuccessStory { get; set; }
 }
 
