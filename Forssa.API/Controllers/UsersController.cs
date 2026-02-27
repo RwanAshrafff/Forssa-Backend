@@ -1,5 +1,8 @@
 using Forssa.Application.Interfaces;
+using Forssa.Domain.Entities;
+using Forssa.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
@@ -11,11 +14,13 @@ public class UsersController : ControllerBase
 {
     private readonly IUserService _userService;
     private readonly ILogger<UsersController> _logger;
+    private readonly ApplicationDbContext _context;
 
-    public UsersController(IUserService userService, ILogger<UsersController> logger)
+    public UsersController(IUserService userService, ILogger<UsersController> logger, ApplicationDbContext context)
     {
         _userService = userService;
         _logger = logger;
+        _context = context;
     }
 
     [Authorize]
@@ -40,6 +45,14 @@ public class UsersController : ControllerBase
         if (string.IsNullOrEmpty(role))
         {
             role = User.FindFirst(ClaimTypes.Role)?.Value;
+        }
+
+        // Filter out Supabase's base JWT role 'authenticated' and 'Authenticated'
+        // This is NOT our custom role - it's the Supabase OAuth role that every user has.
+        // Our custom roles are 'student' and 'instructor'.
+        if (string.Equals(role, "authenticated", StringComparison.OrdinalIgnoreCase))
+        {
+            role = null;
         }
 
         _logger.LogInformation("Syncing user {Email} (ID: {SupabaseId}) with full metadata", email, supabaseId);
@@ -72,8 +85,58 @@ public class UsersController : ControllerBase
         if (string.IsNullOrEmpty(request.Role))
             return BadRequest("Role is required.");
 
-        var userDto = await _userService.SyncUserAsync(supabaseId, email ?? string.Empty, request.Role);
+        if (string.Equals(request.Role, "admin", StringComparison.OrdinalIgnoreCase))
+        {
+            return BadRequest("Direct role change to admin is not allowed.");
+        }
+
+        var userDto = await _userService.SyncUserAsync(
+            supabaseId, 
+            email ?? string.Empty, 
+            request.Role,
+            instructorPosition: request.InstructorPosition);
         return Ok(userDto);
+    }
+
+    [Authorize]
+    [HttpPost("me/request-instructor")]
+    public async Task<IActionResult> RequestInstructorApproval([FromBody] InstructorApprovalRequestDto request)
+    {
+        var supabaseId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                        ?? User.FindFirst("sub")?.Value;
+
+        if (string.IsNullOrEmpty(supabaseId))
+            return BadRequest("User ID (sub) not found in token.");
+
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.SupabaseId == supabaseId);
+        if (user == null)
+            return NotFound("User not found.");
+
+        if (string.Equals(user.Role, "instructor", StringComparison.OrdinalIgnoreCase))
+            return BadRequest("You are already an instructor.");
+
+        var existingPending = await _context.InstructorApprovalRequests
+            .AnyAsync(r => r.UserId == user.Id && r.Status == "Pending");
+
+        if (existingPending)
+            return BadRequest("You already have a pending instructor request.");
+
+        var approvalRequest = new Forssa.Domain.Entities.InstructorApprovalRequest
+        {
+            UserId = user.Id,
+            RequestedPosition = string.IsNullOrWhiteSpace(request.InstructorPosition) ? null : request.InstructorPosition.Trim(),
+            Status = "Pending"
+        };
+
+        _context.InstructorApprovalRequests.Add(approvalRequest);
+        await _context.SaveChangesAsync();
+
+        return Ok(new
+        {
+            message = "Instructor approval request submitted successfully.",
+            requestId = approvalRequest.Id,
+            status = approvalRequest.Status
+        });
     }
     [Authorize]
     [HttpPut("profile")]
@@ -90,7 +153,7 @@ public class UsersController : ControllerBase
         _logger.LogInformation("Actively updating profile for user {Email}", email);
 
         var currentRole = User.FindFirst(ClaimTypes.Role)?.Value;
-        if (string.Equals(currentRole, "Instructor", StringComparison.OrdinalIgnoreCase)
+        if (string.Equals(currentRole, "instructor", StringComparison.OrdinalIgnoreCase)
             && string.IsNullOrWhiteSpace(request.InstructorPosition))
         {
             return BadRequest("Instructor position is required for instructors.");
@@ -110,5 +173,6 @@ public class UsersController : ControllerBase
     }
 }
 
-public record UpdateRoleRequest(string Role);
+public record UpdateRoleRequest(string Role, string? InstructorPosition);
 public record UserProfileRequest(string? FullName, string? Bio, string? AvatarUrl, string? Username, string? InstructorPosition);
+public record InstructorApprovalRequestDto(string? InstructorPosition);

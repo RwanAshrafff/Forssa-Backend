@@ -27,6 +27,9 @@ public class ApplicationDbContext : DbContext
     public DbSet<QuizSubmission> QuizSubmissions { get; set; }
     public DbSet<UserFollow> UserFollows { get; set; }
     public DbSet<SuccessStory> SuccessStories { get; set; }
+    public DbSet<InstructorApprovalRequest> InstructorApprovalRequests { get; set; }
+    public DbSet<FinancialAidDocument> FinancialAidDocuments { get; set; }
+    public DbSet<AdminCredential> AdminCredentials { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -145,6 +148,13 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(u => u.SupabaseId).IsUnique();
         });
 
+        // Admin credentials
+        modelBuilder.Entity<AdminCredential>(entity =>
+        {
+            entity.ToTable("admin_credentials");
+            entity.HasIndex(a => a.Email).IsUnique();
+        });
+
         // User follows
         modelBuilder.Entity<UserFollow>(entity =>
         {
@@ -175,6 +185,28 @@ public class ApplicationDbContext : DbContext
                   .WithMany()
                   .HasForeignKey(s => s.CourseId)
                   .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // Instructor approval requests
+        modelBuilder.Entity<InstructorApprovalRequest>(entity =>
+        {
+            entity.ToTable("instructor_approval_requests");
+            entity.HasIndex(r => new { r.UserId, r.Status });
+            entity.HasOne(r => r.User)
+                  .WithMany()
+                  .HasForeignKey(r => r.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Financial aid documents
+        modelBuilder.Entity<FinancialAidDocument>(entity =>
+        {
+            entity.ToTable("financial_aid_documents");
+            entity.HasIndex(d => new { d.UserId, d.Status });
+            entity.HasOne(d => d.User)
+                  .WithMany()
+                  .HasForeignKey(d => d.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
 
         // Configure global defaults and query filter for soft delete

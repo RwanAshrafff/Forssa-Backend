@@ -56,7 +56,10 @@ public class EnrollmentsController : BaseController
             if (alreadyEnrolled)
                 return BadRequestResult("You are already enrolled in this course.");
 
-            var amount = ToMinorUnits(course.Price);
+            var hasApprovedFinancialAid = await _context.FinancialAidDocuments
+                .AnyAsync(f => f.UserId == user.Id && f.Status == "Approved");
+
+            var amount = hasApprovedFinancialAid ? 0 : ToMinorUnits(course.Price);
             if (amount <= 0)
             {
                 var enrollment = new Enrollment
@@ -148,7 +151,10 @@ public class EnrollmentsController : BaseController
             if (alreadyEnrolled)
                 return HandleResult(new { enrolled = true, courseId = request.CourseId }, "Already enrolled.");
 
-            var amount = ToMinorUnits(course.Price);
+            var hasApprovedFinancialAid = await _context.FinancialAidDocuments
+                .AnyAsync(f => f.UserId == user.Id && f.Status == "Approved");
+
+            var amount = hasApprovedFinancialAid ? 0 : ToMinorUnits(course.Price);
             if (amount > 0)
             {
                 if (string.IsNullOrWhiteSpace(request.PaymentIntentId))
