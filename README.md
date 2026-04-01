@@ -163,6 +163,39 @@ public async Task<IActionResult> CreateCourse([FromBody] CreateCourseDto dto) { 
 
 ---
 
+## 👥 Follow System & Home Feed
+
+Students and instructors can follow each other. The **Home Feed** aggregates activity from followed users in real time.
+
+### API Endpoints — `api/follows`
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/follows/{targetUserId}` | Follow a user |
+| `DELETE` | `/api/follows/{targetUserId}` | Unfollow a user |
+| `GET` | `/api/follows/following` | Get list of users I follow |
+| `GET` | `/api/follows/followers` | Get list of my followers |
+| `GET` | `/api/follows/home-feed` | Get personalized home feed |
+| `GET` | `/api/follows/users/{userId}/followers` | Get a user's followers |
+| `GET` | `/api/follows/users/{userId}/following` | Get a user's following list |
+| `GET` | `/api/follows/users/{userId}/connections` | Get follow connection status |
+
+### Home Feed Response
+
+The `home-feed` endpoint returns a merged, chronologically sorted activity stream:
+
+```json
+{
+  "newCourses": [{ "courseId": "...", "courseTitle": "...", "instructorName": "..." }],
+  "newCertificates": [{ "studentName": "...", "courseTitle": "...", "completedAt": "..." }],
+  "newFollowers": [{ "userId": "...", "fullName": "...", "followedAt": "..." }]
+}
+```
+
+> All endpoints require a valid **JWT** in the `Authorization` header.
+
+---
+
 ## 💳 Payment Flow
 
 ```
