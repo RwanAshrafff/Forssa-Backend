@@ -1,231 +1,322 @@
-# Forssa Backend - Base Repository Pattern
+<div align="center">
 
-A clean architecture .NET backend project with a complete base repository pattern implementation.
+<img src="https://img.shields.io/badge/Forssa-Learning%20Platform-6366f1?style=for-the-badge&logo=graduation-cap&logoColor=white" alt="Forssa" height="40"/>
 
-## Project Structure
+# ⚙️ Forssa — Backend
+
+### *Powering Accessible Education at Scale*
+
+[![.NET](https://img.shields.io/badge/.NET-9-512BD4?style=flat-square&logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
+[![C#](https://img.shields.io/badge/C%23-239120?style=flat-square&logo=c-sharp&logoColor=white)](https://learn.microsoft.com/en-us/dotnet/csharp/)
+[![Azure](https://img.shields.io/badge/Deployed%20on-Azure-0078D4?style=flat-square&logo=microsoftazure&logoColor=white)](https://azure.microsoft.com/)
+[![Supabase](https://img.shields.io/badge/Database-Supabase-3ECF8E?style=flat-square&logo=supabase&logoColor=white)](https://supabase.com/)
+[![Stripe](https://img.shields.io/badge/Payments-Stripe-635BFF?style=flat-square&logo=stripe&logoColor=white)](https://stripe.com/)
+
+<br/>
+
+[🌐 Live Demo](https://forssa-frontend.vercel.app/) &nbsp;·&nbsp; [🎨 Frontend Repo](https://github.com/SherifAhmedd/Forssa-Frontend) &nbsp;·&nbsp; [📸 Screenshots](https://drive.google.com/drive/folders/1w3Pcc5fuSLJEhayRsv46X6_6XFh0JPzW?usp=sharing)
+
+<br/>
+
+👤 **[Sherif Ahmed](https://github.com/SherifAhmedd)** &nbsp;·&nbsp; 👤 **[Rwan Ashraf](https://github.com/RwanAshrafff)**
+
+</div>
+
+---
+
+## 📌 Overview
+
+**Forssa** is a full-stack learning platform inspired by Udemy and Coursera, built with a mission: **make quality education accessible to everyone**, especially students who cannot afford paid courses.
+
+This repository contains the **REST API backend** built with **.NET**, hosted on **Microsoft Azure**, and powered by **Supabase** for data and authentication.
+
+> 🎯 *Every API endpoint serves a purpose: democratizing education.*
+
+---
+
+## 🏗️ System Architecture
 
 ```
-Forssa-Backend/
-├── Forssa.API/                 # Presentation Layer
-│   ├── Controllers/
-│   │   ├── BaseController.cs       # Base controller with common API responses
-│   │   └── ProductsController.cs   # Example controller
-│   ├── Program.cs
-│   └── appsettings.json
-│
-├── Forssa.Application/         # Application Layer
-│   ├── DTOs/
-│   │   ├── BaseDTO.cs             # Base DTO with common properties
-│   │   └── ProductDTO.cs          # Example DTO
-│   ├── Interfaces/
-│   │   ├── IBaseRepository.cs     # Base repository interface
-│   │   └── IBaseService.cs        # Base service interface
-│   ├── Mappings/
-│   │   └── MappingProfile.cs      # AutoMapper configurations
-│   └── Services/
-│
-├── Forssa.Domain/              # Domain Layer
-│   └── Entities/
-│       ├── BaseEntity.cs          # Base entity with common properties
-│       └── Product.cs             # Example entity
-│
-└── Forssa.Infrastructure/      # Infrastructure Layer
-    ├── Data/
-    │   └── ApplicationDbContext.cs # EF Core DbContext
-    ├── Repositories/
-    │   └── BaseRepositories.cs    # Base repository implementation
-    ├── Services/
-    │   ├── BaseServices.cs        # Base service implementation
-    │   └── ProductService.cs      # Example service
-    └── DependencyInjection.cs     # DI configuration
+┌─────────────────┐       ┌──────────────────────┐       ┌──────────────┐
+│   Next.js App   │──────▶│   .NET REST API       │──────▶│  Supabase DB │
+│   (Vercel)      │◀──────│   (Azure App Service)  │◀──────│  + Storage   │
+└─────────────────┘       └──────────────────────┘       └──────────────┘
+                                     │
+                                     ▼
+                            ┌──────────────────┐
+                            │  Stripe Webhooks  │
+                            │  (Payment Events) │
+                            └──────────────────┘
 ```
 
-## Features
+---
 
-### Base Entity (Domain Layer)
-- `Id` (Guid) - Unique identifier
-- `CreatedAt` (DateTime) - Creation timestamp
-- `UpdatedAt` (DateTime?) - Last update timestamp
-- `IsDeleted` (bool) - Soft delete flag
-- `DeletedAt` (DateTime?)  - Soft delete timestamp
+## ✨ Core Features
 
-### Base Repository (Infrastructure Layer)
-- `GetByIdAsync` - Get entity by ID
-- `GetAllAsync` - Get all entities
-- `FindAsync` - Find entities by predicate
-- `FirstOrDefaultAsync` - Get first entity matching predicate
-- `AddAsync` - Create new entity
-- `AddRangeAsync` - Create multiple entities
-- `UpdateAsync` - Update existing entity
-- `DeleteAsync` - Hard delete (permanent)
-- `SoftDeleteAsync` - Soft delete (mark as deleted)
-- `CountAsync` - Count entities
-- `ExistsAsync` - Check if entity exists
+<table>
+<tr>
+<td width="50%" valign="top">
 
-### Base Service (Infrastructure Layer)
-- Maps between DTOs and Entities using AutoMapper
-- Implements business logic layer
-- Provides CRUD operations with automatic mapping
+### 🎓 Learning Platform
+- Course creation, publishing & enrollment
+- Module & lesson management
+- Video upload & storage (Supabase Storage)
+- Progress tracking per lesson
+- Certificate generation (PDF)
+- Learning streaks & points system
 
-### Base Controller (API Layer)
-- `HandleResult` - Standard success response
-- `Created` - 201 Created response
-- `BadRequestResult` - 400 Bad Request
-- `NotFoundResult` - 404 Not Found
-- `UnauthorizedResult` - 401 Unauthorized
-- `ForbiddenResult` - 403 Forbidden
-- `InternalServerError` - 500 Internal Server Error
+</td>
+<td width="50%" valign="top">
 
-## How to Use
+### 🔐 Auth & Security
+- Google OAuth + Email/Password (via Supabase)
+- JWT-based session management
+- Role-Based Access Control (RBAC):
+  - `Student` | `Instructor` | `Admin`
+- Row Level Security (RLS) in Supabase
+- Backend role validation on all endpoints
 
-### 1. Create a New Entity
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+
+### 💳 Payments
+- Stripe Checkout session creation
+- Webhook processing for payment events
+- Enrollment confirmation post-payment
+- Financial aid application management
+
+</td>
+<td width="50%" valign="top">
+
+### 🛡️ Admin Controls
+- Approve/reject instructor accounts
+- Approve/reject financial aid requests
+- Moderate student success stories
+- Category & content management
+
+</td>
+</tr>
+</table>
+
+---
+
+## 🏗️ Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| **Framework** | ASP.NET Core (.NET 9) |
+| **Language** | C# |
+| **Database** | Supabase (PostgreSQL) |
+| **Authentication** | Supabase Auth |
+| **File Storage** | Supabase Storage |
+| **Payments** | Stripe |
+| **Deployment** | Microsoft Azure App Service |
+
+---
+
+## 🗄️ Database Design
+
+```
+users (Supabase Auth)
+  └── profiles          (role: student | instructor | admin)
+        └── courses
+              └── modules
+                    └── lessons
+        └── enrollments ──▶ courses
+        └── transactions ──▶ payment tracking
+        └── financial_aid
+        └── success_stories
+```
+
+### Core Tables
+
+| Table | Description |
+|-------|-------------|
+| `profiles` | Extended user data + role management |
+| `courses` | Course metadata, pricing, thumbnail |
+| `modules` | Course sections / chapters |
+| `lessons` | Individual lesson content & video URLs |
+| `enrollments` | Student ↔ Course relationship |
+| `transactions` | Stripe payment records |
+| `financial_aid` | Aid applications & approval status |
+| `success_stories` | Student testimonials pending admin review |
+
+---
+
+## 🔐 Authentication & Authorization
+
+All protected routes require a valid **Supabase JWT** in the `Authorization` header:
+
+```
+Authorization: Bearer <supabase_jwt_token>
+```
+
+Role enforcement is applied at the controller level:
 
 ```csharp
-public class YourEntity : BaseEntity
-{
-    public string Name { get; set; } = string.Empty;
-    // Add your properties here
-}
+[Authorize(Roles = "Instructor")]
+[HttpPost("courses")]
+public async Task<IActionResult> CreateCourse([FromBody] CreateCourseDto dto) { ... }
 ```
 
-### 2. Create a DTO
+---
 
-```csharp
-public class YourEntityDTO : BaseDTO
-{
-    public string Name { get; set; } = string.Empty;
-    // Add your properties here
-}
+## 💳 Payment Flow
+
+```
+POST /api/payments/checkout
+       ↓
+Creates Stripe Checkout Session
+       ↓
+User redirected to Stripe
+       ↓
+POST /api/payments/webhook  ← Stripe notifies backend
+       ↓
+Payment confirmed → Enrollment created ✅
 ```
 
-### 3. Add AutoMapper Configuration
+---
 
-```csharp
-// In Forssa.Application/Mappings/MappingProfile.cs
-CreateMap<YourEntity, YourEntityDTO>().ReverseMap();
-```
+## 📁 File Storage
 
-### 4. Create a Service (Optional)
+All media is stored in **Supabase Storage** buckets:
 
-```csharp
-public class YourEntityService : BaseService<YourEntity, YourEntityDTO>
-{
-    public YourEntityService(IBaseRepository<YourEntity> repository, IMapper mapper)
-        : base(repository, mapper)
-    {
-    }
+| Bucket | Contents |
+|--------|----------|
+| `course-thumbnails` | Course cover images |
+| `lesson-videos` | Uploaded lesson videos |
+| `certificates` | Generated PDF certificates |
+| `documents` | Financial aid & misc files |
 
-    // Add custom business logic here
-}
-```
+---
 
-### 5. Register Service in DependencyInjection.cs
+## 🚀 Getting Started
 
-```csharp
-services.AddScoped<YourEntityService>();
-```
+### Prerequisites
 
-### 6. Create a Controller
+- [.NET 9 SDK](https://dotnet.microsoft.com/download)
+- A [Supabase](https://supabase.com/) project
+- A [Stripe](https://stripe.com/) account
+- (Optional) [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/) for deployment
 
-```csharp
-[Route("api/[controller]")]
-[ApiController]
-public class YourEntitiesController : BaseController
-{
-    private readonly IBaseService<YourEntity, YourEntityDTO> _service;
-
-    public YourEntitiesController(IBaseService<YourEntity, YourEntityDTO> service)
-    {
-        _service = service;
-    }
-
-    [HttpGet]
-    public async Task<IActionResult> GetAll()
-    {
-        var items = await _service.GetAllAsync();
-        return HandleResult(items);
-    }
-
-    // Add more endpoints...
-}
-```
-
-### 7. Add DbSet to ApplicationDbContext
-
-```csharp
-public DbSet<YourEntity> YourEntities { get; set; }
-```
-
-## Setup Instructions
-
-### 1. Update Connection String
-
-Edit `appsettings.json` in Forssa.API:
-
-```json
-"ConnectionStrings": {
-  "DefaultConnection": "Server=your_server;Database=ForssaDb;Trusted_Connection=True;TrustServerCertificate=True;"
-}
-```
-
-### 2. Install Required NuGet Packages
+### Installation
 
 ```bash
-# In Forssa.Infrastructure
-dotnet add package Microsoft.EntityFrameworkCore.SqlServer
-dotnet add package Microsoft.EntityFrameworkCore.Tools
-dotnet add package AutoMapper.Extensions.Microsoft.DependencyInjection
+# 1. Clone the repository
+git clone https://github.com/RwanAshrafff/Forssa-Backend.git
+cd Forssa-Backend
 
-# In Forssa.API
-dotnet add package Swashbuckle.AspNetCore
-```
+# 2. Restore dependencies
+dotnet restore
 
-### 3. Create Database Migration
+# 3. Configure environment variables (see below)
 
-```bash
-dotnet ef migrations add InitialCreate --project Forssa.Infrastructure --startup-project Forssa.API
-dotnet ef database update --project Forssa.Infrastructure --startup-project Forssa.API
-```
-
-### 4. Run the Application
-
-```bash
-cd Forssa.API
+# 4. Run the application
 dotnet run
 ```
 
-### 5. Access Swagger UI
+The API will be available at `http://localhost:5000`.
 
-Navigate to: `https://localhost:5001/swagger`
+### Environment Variables
 
-## Built-in Features
+All secrets are managed via **environment variables** (no `appsettings.json` secrets):
 
-- ✅ Soft Delete - Entities are marked as deleted instead of being removed
-- ✅ Automatic Timestamps - CreatedAt and UpdatedAt are managed automatically
-- ✅ Global Query Filters - Soft-deleted entities are automatically excluded
-- ✅ Generic Repository Pattern - Reusable CRUD operations
-- ✅ Clean Architecture - Separation of concerns
-- ✅ AutoMapper Integration - Automatic DTO mapping
-- ✅ Swagger Documentation - API documentation
-- ✅ CORS Support - Cross-origin requests enabled
+```env
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+SUPABASE_JWT_SECRET=your_supabase_jwt_secret
 
-## Example Usage
+STRIPE_SECRET_KEY=your_stripe_secret_key
+STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret
 
-The project includes a complete `Product` example:
-- [Product.cs](Forssa.Domain/Entities/Product.cs) - Entity
-- [ProductDTO.cs](Forssa.Application/DTOs/ProductDTO.cs) - DTO
-- [ProductService.cs](Forssa.Infrastructure/Services/ProductService.cs) - Service
-- [ProductsController.cs](Forssa.API/Controllers/ProductsController.cs) - Controller
+FRONTEND_URL=https://forssa-frontend.vercel.app
+```
 
-## Technologies Used
+---
 
-- .NET 8.0 (or your version)
-- Entity Framework Core
-- AutoMapper
-- SQL Server
-- Swagger/OpenAPI
-- Clean Architecture Pattern
+## 📂 Project Structure
 
-## License
+```
+Forssa-Backend/
+├── Controllers/          # API route handlers
+│   ├── AuthController.cs
+│   ├── CoursesController.cs
+│   ├── EnrollmentsController.cs
+│   ├── PaymentsController.cs
+│   └── AdminController.cs
+├── Services/             # Business logic layer
+├── Models/               # Domain models & DTOs
+├── Middleware/           # Auth & error handling middleware
+├── Program.cs            # App entry point & DI config
+└── appsettings.json      # Non-secret configuration only
+```
 
-MIT License
+---
+
+## ☁️ Deployment (Azure)
+
+The backend is deployed on **Azure App Service**:
+
+1. **Build** the release artifact:
+   ```bash
+   dotnet publish -c Release -o ./publish
+   ```
+
+2. **Configure** Azure App Service environment variables via the Azure Portal or CLI:
+   ```bash
+   az webapp config appsettings set --name <app-name> \
+     --resource-group <rg-name> \
+     --settings SUPABASE_URL="..." STRIPE_SECRET_KEY="..."
+   ```
+
+3. **Deploy** using GitHub Actions CI/CD or Azure CLI.
+
+---
+
+## 🔐 Security Practices
+
+| Practice | Implementation |
+|----------|---------------|
+| 🔒 Secret management | Environment variables only, never committed to git |
+| 🛡️ Role enforcement | Backend validates roles on every protected endpoint |
+| 🔑 JWT validation | Supabase JWT verified on all authenticated routes |
+| 🗃️ Data isolation | Supabase RLS ensures users only access their own data |
+| 🚫 No sensitive frontend exposure | All protected logic runs server-side |
+
+---
+
+## 🌍 Impact
+
+Forssa is built around a simple belief:
+
+> **Education should not be a privilege.**
+
+- 📖 Equal access to quality education
+- 🤝 Empowering underprivileged students
+- 🚀 Connecting learning with real-world career opportunities
+
+---
+
+## 📸 Screenshots
+
+> 📁 [View all screenshots on Google Drive](https://drive.google.com/drive/folders/1w3Pcc5fuSLJEhayRsv46X6_6XFh0JPzW?usp=sharing)
+
+---
+
+## 🔗 Related Repositories
+
+| Repo | Link |
+|------|------|
+| 🎨 Frontend | [Forssa-Frontend](https://github.com/SherifAhmedd/Forssa-Frontend) |
+| ⚙️ Backend | [Forssa-Backend](https://github.com/RwanAshrafff/Forssa-Backend) |
+| 🌐 Live App | [forssa-frontend.vercel.app](https://forssa-frontend.vercel.app/) |
+
+---
+
+<div align="center">
+
+Made with ❤️ by the Forssa Team
+
+</div>
